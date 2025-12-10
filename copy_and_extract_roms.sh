@@ -128,13 +128,24 @@ is_already_extracted() {
         return 1  # Not extracted
     fi
     
-    # For multi-disc games, check if THIS specific disc's files are already present
-    # We'll look for any file in the extract_dir that contains the archive name (without extension)
-    if [ -n "$(find "$extract_dir" -maxdepth 1 -type f -name "${archive_name_no_ext}.*" 2>/dev/null)" ]; then
-        return 0  # This disc already extracted
-    else
-        return 1  # This disc not yet extracted
+    # Check if directory has any files (not empty)
+    if [ -z "$(ls -A "$extract_dir" 2>/dev/null)" ]; then
+        return 1  # Directory exists but is empty
     fi
+    
+    # For multi-disc games, check if THIS specific disc's files are already present
+    # Check if the archive name differs from base game name (indicates multi-disc)
+    if [ "$archive_name_no_ext" != "$base_game_name" ]; then
+        # This is a multi-disc game - check for specific disc files
+        if [ -n "$(find "$extract_dir" -maxdepth 1 -type f -name "${archive_name_no_ext}.*" 2>/dev/null)" ]; then
+            return 0  # This disc already extracted
+        else
+            return 1  # This disc not yet extracted
+        fi
+    fi
+    
+    # Single game - directory exists and has files, so it's already extracted
+    return 0
 }
 
 # Extract archive (supports .zip and .7z)
@@ -158,7 +169,7 @@ extract_archive() {
     # Extract based on file type
     case "$extension" in
         "zip")
-            if unzip -q "$archive_path" -d "$extract_to_dir"; then
+            if unzip -o -q "$archive_path" -d "$extract_to_dir"; then
                 echo -e "${GREEN}✓${NC} Extracted: $archive_name"
                 return 0
             else
