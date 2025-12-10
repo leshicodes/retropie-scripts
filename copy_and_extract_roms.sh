@@ -87,7 +87,12 @@ get_base_game_name() {
     
     # Remove disc/disk patterns (case insensitive)
     # Matches: (Disc N), (Disk N), [Disc N], [Disk N]
-    local base_name=$(echo "$name_no_ext" | sed -E 's/[[:space:]]*[\(\[][Dd]is[ck][[:space:]]+[0-9]+[\)\]][[:space:]]*$//')
+    # Using multiple sed commands to handle both Disc and Disk
+    local base_name="$name_no_ext"
+    base_name=$(echo "$base_name" | sed -E 's/ *\(Disc [0-9]+\) *$//')
+    base_name=$(echo "$base_name" | sed -E 's/ *\(Disk [0-9]+\) *$//')
+    base_name=$(echo "$base_name" | sed -E 's/ *\[Disc [0-9]+\] *$//')
+    base_name=$(echo "$base_name" | sed -E 's/ *\[Disk [0-9]+\] *$//')
     
     echo -e "${CYAN}DEBUG get_base_game_name: Input='$archive_name' NameNoExt='$name_no_ext' Output='$base_name'${NC}" >&2
     
