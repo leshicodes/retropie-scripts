@@ -89,6 +89,8 @@ get_base_game_name() {
     # Matches: (Disc N), (Disk N), [Disc N], [Disk N]
     local base_name=$(echo "$name_no_ext" | sed -E 's/[[:space:]]*[\(\[][Dd]is[ck][[:space:]]+[0-9]+[\)\]][[:space:]]*$//')
     
+    echo -e "${CYAN}DEBUG get_base_game_name: Input='$archive_name' NameNoExt='$name_no_ext' Output='$base_name'${NC}" >&2
+    
     echo "$base_name"
 }
 
@@ -275,9 +277,9 @@ process_archives() {
         # Check if already extracted
         if is_already_extracted "$archive" "$output_emulator_dir"; then
             local archive_name=$(basename "$archive")
-            local dir_name="${archive_name%.*}"
+            local base_game_name=$(get_base_game_name "$archive_name")
             echo -e "${YELLOW}[SKIP]${NC} Already extracted: $emulator/$(basename "$archive")"
-            echo -e "       Exists: $output_emulator_dir/$dir_name/"
+            echo -e "       Exists: $output_emulator_dir/$base_game_name/"
             ((total_skipped++))
             continue
         fi
@@ -288,6 +290,7 @@ process_archives() {
         local archive_name=$(basename "$archive")
         # Use base game name (strips disc numbers) for extraction directory
         local base_game_name=$(get_base_game_name "$archive_name")
+        echo -e "${CYAN}DEBUG: Base game name: $base_game_name${NC}"
         local dest_archive="$output_emulator_dir/$archive_name"
         local dest_extract_dir="$output_emulator_dir/$base_game_name"
         
