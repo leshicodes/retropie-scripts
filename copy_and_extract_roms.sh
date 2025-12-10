@@ -77,6 +77,21 @@ parse_arguments() {
 # PHASE 1: Helper Functions
 #==============================================================================
 
+# Strip disc/disk number from ROM name to get base game name
+# Handles patterns like: (Disc 1), (Disk 2), [Disc 3], etc.
+get_base_game_name() {
+    local archive_name="$1"
+    
+    # Remove extension first
+    local name_no_ext="${archive_name%.*}"
+    
+    # Remove disc/disk patterns (case insensitive)
+    # Matches: (Disc N), (Disk N), [Disc N], [Disk N]
+    local base_name=$(echo "$name_no_ext" | sed -E 's/[[:space:]]*[\(\[][Dd]is[ck][[:space:]]+[0-9]+[\)\]][[:space:]]*$//')
+    
+    echo "$base_name"
+}
+
 # Map emulator directory names (handle special cases)
 map_emulator_name() {
     local emulator="$1"
@@ -99,17 +114,24 @@ is_already_extracted() {
     local archive_path="$1"
     local output_emulator_dir="$2"
     
-    # Get archive filename without extension
     local archive_name=$(basename "$archive_path")
-    local dir_name="${archive_name%.*}"  # Remove .zip or .7z extension
+    local archive_name_no_ext="${archive_name%.*}"
     
-    # Check if extraction directory already exists
-    local extract_dir="$output_emulator_dir/$dir_name"
+    # Get base game name (strips disc numbers for multi-disc games)
+    local base_game_name=$(get_base_game_name "$archive_name")
+    local extract_dir="$output_emulator_dir/$base_game_name"
     
-    if [ -d "$extract_dir" ]; then
-        return 0  # Already extracted
-    else
+    # Check if extraction directory exists
+    if [ ! -d "$extract_dir" ]; then
         return 1  # Not extracted
+    fi
+    
+    # For multi-disc games, check if THIS specific disc's files are already present
+    # We'll look for any file in the extract_dir that contains the archive name (without extension)
+    if [ -n "$(find "$extract_dir" -maxdepth 1 -type f -name "${archive_name_no_ext}.*" 2>/dev/null)" ]; then
+        return 0  # This disc already extracted
+    else
+        return 1  # This disc not yet extracted
     fi
 }
 
@@ -264,9 +286,10 @@ process_archives() {
         echo -e "${GREEN}[PROCESS]${NC} $emulator/$(basename "$archive")"
         
         local archive_name=$(basename "$archive")
-        local dir_name="${archive_name%.*}"
+        # Use base game name (strips disc numbers) for extraction directory
+        local base_game_name=$(get_base_game_name "$archive_name")
         local dest_archive="$output_emulator_dir/$archive_name"
-        local dest_extract_dir="$output_emulator_dir/$dir_name"
+        local dest_extract_dir="$output_emulator_dir/$base_game_name"
         
         # Copy archive
         if ! copy_archive "$archive" "$dest_archive"; then
