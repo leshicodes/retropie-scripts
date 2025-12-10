@@ -210,6 +210,12 @@ process_archives() {
     local total_failed=0
     
     echo -e "${BLUE}Scanning for archives...${NC}"
+    echo -e "${BLUE}DEBUG: Running find command on: $input_dir${NC}"
+    echo ""
+    
+    # Debug: Show what find command we're running
+    echo -e "${CYAN}DEBUG: find -L \"$input_dir\" -type f -name \"*.zip\" -print0${NC}"
+    echo -e "${CYAN}DEBUG: find -L \"$input_dir\" -type f -name \"*.7z\" -print0${NC}"
     echo ""
     
     # Find all .zip and .7z files recursively, excluding neo* directories
@@ -217,10 +223,14 @@ process_archives() {
     while IFS= read -r -d $'\0' archive; do
         ((total_found++))
         
+        echo -e "${CYAN}DEBUG: Found archive: $archive${NC}"
+        
         # Extract emulator name from path
         # Path structure: /backup-roms/{EMULATOR}/roms/...
         local relative_path="${archive#$input_dir/}"
         local emulator=$(echo "$relative_path" | cut -d'/' -f1)
+        
+        echo -e "${CYAN}DEBUG: Emulator: $emulator${NC}"
         
         # Skip neo* directories
         if [[ "$emulator" == neo* ]]; then
@@ -278,7 +288,11 @@ process_archives() {
         ((total_processed++))
         echo ""
         
-    done < <(find -L "$input_dir" -type f -name "*.zip" -print0; find -L "$input_dir" -type f -name "*.7z" -print0)
+    done < <(find -L "$input_dir" -type f -name "*.zip" -print0 2>&1; find -L "$input_dir" -type f -name "*.7z" -print0 2>&1)
+    
+    echo -e "${CYAN}DEBUG: While loop completed${NC}"
+    echo ""
+    
     # Print summary
     echo ""
     echo -e "${BLUE}========================================${NC}"
