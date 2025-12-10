@@ -213,7 +213,7 @@ process_archives() {
     echo ""
     
     # Find all .zip and .7z files recursively, excluding neo* directories
-    # Using a different approach that's more reliable
+    # Using -L to follow symbolic links
     while IFS= read -r -d $'\0' archive; do
         ((total_found++))
         
@@ -278,7 +278,7 @@ process_archives() {
         ((total_processed++))
         echo ""
         
-    done < <(find "$input_dir" -type f -name "*.zip" -print0; find "$input_dir" -type f -name "*.7z" -print0)
+    done < <(find -L "$input_dir" -type f -name "*.zip" -print0; find -L "$input_dir" -type f -name "*.7z" -print0)
     # Print summary
     echo ""
     echo -e "${BLUE}========================================${NC}"
