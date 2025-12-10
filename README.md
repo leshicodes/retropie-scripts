@@ -13,6 +13,7 @@ Recursively copies and extracts `.zip` and `.7z` ROM archives from a backup dire
 - ✅ **Idempotent** - Skips archives that are already extracted (safe to run multiple times)
 - ✅ **Dry-run mode** - Preview what will happen before making changes
 - ✅ **Multi-format support** - Handles both `.zip` and `.7z` archives
+- ✅ **Multi-disc game support** - Automatically consolidates multi-disc games into single directories
 - ✅ **Symbolic link aware** - Follows symlinks in source directories
 - ✅ **Smart emulator mapping** - Handles special cases (dc→dreamcast, nintendo-dsi→nds)
 - ✅ **Selective processing** - Can ignore specific emulator directories
@@ -64,6 +65,11 @@ sudo apt-get install unzip p7zip-full
 ├── snes/
 │   └── roms/
 │       └── Super Metroid (USA).zip
+├── psx/
+│   └── roms/
+│       ├── Final Fantasy VII (USA) (Disc 1).7z
+│       ├── Final Fantasy VII (USA) (Disc 2).7z
+│       └── Final Fantasy VII (USA) (Disc 3).7z
 └── dc/
     └── roms/
         └── Crazy Taxi (USA).7z
@@ -80,6 +86,14 @@ sudo apt-get install unzip p7zip-full
 ├── snes/
 │   └── Super Metroid (USA)/
 │       └── [extracted ROM file]
+├── psx/
+│   └── Final Fantasy VII (USA)/
+│       ├── Final Fantasy VII (USA) (Disc 1).bin
+│       ├── Final Fantasy VII (USA) (Disc 1).cue
+│       ├── Final Fantasy VII (USA) (Disc 2).bin
+│       ├── Final Fantasy VII (USA) (Disc 2).cue
+│       ├── Final Fantasy VII (USA) (Disc 3).bin
+│       └── Final Fantasy VII (USA) (Disc 3).cue
 └── dreamcast/
     └── Crazy Taxi (USA)/
         └── [extracted game files]
@@ -90,11 +104,23 @@ sudo apt-get install unzip p7zip-full
 1. **Scans** input directory recursively for `.zip` and `.7z` files
 2. **Extracts** emulator name from path structure
 3. **Maps** emulator names (handles special cases like `dc` → `dreamcast`)
-4. **Checks** if archive is already extracted in output directory
-5. **Skips** if already extracted (idempotent behavior)
-6. **Copies** archive to output emulator directory (only if needed)
-7. **Extracts** to folder matching archive name (minus extension)
-8. **Cleans up** the copied archive after successful extraction
+4. **Detects multi-disc games** (e.g., `(Disc 1)`, `(Disc 2)`) and strips disc numbers
+5. **Checks** if archive is already extracted in output directory
+6. **Skips** if already extracted (idempotent behavior)
+7. **Copies** archive to output emulator directory (only if needed)
+8. **Extracts** to folder matching the base game name (multi-disc games share one directory)
+9. **Cleans up** the copied archive after successful extraction
+
+#### Multi-Disc Game Handling
+
+The script intelligently detects and consolidates multi-disc games:
+
+- **Patterns detected**: `(Disc N)`, `(Disk N)`, `[Disc N]`, `[Disk N]` (case insensitive)
+- **Behavior**: All discs extract into a single parent directory named after the game
+- **Example**: 
+  - Input: `Final Fantasy VIII (USA) (Disc 1).7z`, `Final Fantasy VIII (USA) (Disc 2).7z`, etc.
+  - Output directory: `Final Fantasy VIII (USA)/` containing all disc files
+- **Safety**: Only removes disc patterns at the end of filenames, preserving region codes, languages, and revision numbers like `(USA)`, `(En,Ja)`, `(Rev 2)`
 
 #### Special Emulator Mappings
 
